@@ -30,12 +30,10 @@ func main() {
 	x := async_logger.NewAsyncLogger(logger)
 
 	sync, reqID := x.StartLogger(context.Background())
+	defer sync()
 	x.Info(reqID, "first message")
 	x.Debug(reqID, "first message")
 	x.Warn(reqID, "first message")
 	x.Error(reqID, "first message")
-
-	sync()
-	// time.Sleep(10 * time.Second)
 	fmt.Println("done")
 }
