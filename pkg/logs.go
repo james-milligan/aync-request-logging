@@ -1,5 +1,11 @@
 package async_logger
 
+import (
+	"fmt"
+
+	"go.uber.org/zap"
+)
+
 type logLevel int
 
 const (
@@ -10,31 +16,59 @@ const (
 )
 
 func (a *AsyncLogger) Debug(reqID string, msg string) {
-	a.loggers[reqID].buffer <- messageWrapper{
-		level: DEBUG,
-		msg:   msg,
+	if a.loggers[reqID] != nil && a.loggers[reqID].buffer != nil {
+		a.loggers[reqID].buffer <- messageWrapper{
+			level: DEBUG,
+			msg:   msg,
+		}
+	} else {
+		a.parentLogger.Error(
+			fmt.Sprintf("log attempted for closed channel %s", reqID),
+			zap.String("requestID", reqID),
+		)
 	}
 }
 
 func (a *AsyncLogger) Info(reqID string, msg string) {
-	a.loggers[reqID].buffer <- messageWrapper{
-		level: INFO,
-		msg:   msg,
+	if a.loggers[reqID] != nil && a.loggers[reqID].buffer != nil {
+		a.loggers[reqID].buffer <- messageWrapper{
+			level: INFO,
+			msg:   msg,
+		}
+	} else {
+		a.parentLogger.Error(
+			fmt.Sprintf("log attempted for closed channel %s", reqID),
+			zap.String("requestID", reqID),
+		)
 	}
 }
 
 func (a *AsyncLogger) Warn(reqID string, msg string) {
-	a.loggers[reqID].buffer <- messageWrapper{
-		level: WARNING,
-		msg:   msg,
-		file:  getCaller(),
+	if a.loggers[reqID] != nil && a.loggers[reqID].buffer != nil {
+		a.loggers[reqID].buffer <- messageWrapper{
+			level:  WARNING,
+			msg:    msg,
+			source: getCaller,
+		}
+	} else {
+		a.parentLogger.Error(
+			fmt.Sprintf("log attempted for closed channel %s", reqID),
+			zap.String("requestID", reqID),
+		)
 	}
 }
 
 func (a *AsyncLogger) Error(reqID string, msg string) {
-	a.loggers[reqID].buffer <- messageWrapper{
-		level: ERROR,
-		msg:   msg,
-		file:  getCaller(),
+	if a.loggers[reqID] != nil && a.loggers[reqID].buffer != nil {
+		a.loggers[reqID].buffer <- messageWrapper{
+			level:  ERROR,
+			msg:    msg,
+			source: getCaller,
+		}
+	} else {
+		a.parentLogger.Error(
+			fmt.Sprintf("log attempted for closed channel %s", reqID),
+			zap.String("requestID", reqID),
+		)
 	}
 }

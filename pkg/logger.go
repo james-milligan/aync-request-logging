@@ -18,9 +18,9 @@ type requestLogger struct {
 }
 
 type messageWrapper struct {
-	msg   string
-	level logLevel
-	file  string
+	msg    string
+	level  logLevel
+	source string
 }
 
 func NewAsyncLogger(parentLogger *zap.Logger) AsyncLogger {
@@ -64,7 +64,8 @@ func (a *AsyncLogger) log(ctx context.Context, fields []zap.Field, reqID string)
 			// need to flush any remaining messages in the buffer
 			for {
 				select {
-				case <-a.loggers[reqID].buffer:
+				case message := <-a.loggers[reqID].buffer:
+					logMessage(a.loggers[reqID].logger, message)
 				default:
 					delete(a.loggers, reqID)
 					return
@@ -82,8 +83,8 @@ func logMessage(logger *zap.Logger, message messageWrapper) {
 	case INFO:
 		logger.Info(message.msg)
 	case WARNING:
-		logger.Warn(message.msg, zap.String("caller", message.file))
+		logger.Warn(message.msg, zap.String("caller", message.source))
 	case ERROR:
-		logger.Error(message.msg, zap.String("caller", message.file))
+		logger.Error(message.msg, zap.String("caller", message.source))
 	}
 }
