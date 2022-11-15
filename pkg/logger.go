@@ -15,6 +15,7 @@ type AsyncLogger struct {
 type requestLogger struct {
 	logger *zap.Logger
 	buffer chan (messageWrapper)
+	done   chan (struct{})
 }
 
 type messageWrapper struct {
@@ -31,20 +32,25 @@ func NewAsyncLogger(parentLogger *zap.Logger) AsyncLogger {
 
 }
 
-func (a *AsyncLogger) StartLogger(ctx context.Context, fields ...zap.Field) (context.CancelFunc, string) {
+func (a *AsyncLogger) StartLogger(ctx context.Context, fields ...zap.Field) (func(), string) {
 	ctx, cancel := context.WithCancel(ctx)
 	reqID := xid.New().String()
 
 	// create reference to requestLogger
 	a.loggers[reqID] = &requestLogger{
 		buffer: make(chan messageWrapper),
+		done:   make(chan struct{}, 1),
 	}
 
 	// start logging channel
 	go a.log(ctx, fields, reqID)
 
-	// unblock parent process
-	return cancel, reqID
+	// unblock parent process + provide sync function
+	return func() {
+		cancel()
+		<-a.loggers[reqID].done
+		delete(a.loggers, reqID)
+	}, reqID
 }
 
 func (a *AsyncLogger) log(ctx context.Context, fields []zap.Field, reqID string) {
@@ -67,7 +73,7 @@ func (a *AsyncLogger) log(ctx context.Context, fields []zap.Field, reqID string)
 				case message := <-a.loggers[reqID].buffer:
 					logMessage(a.loggers[reqID].logger, message)
 				default:
-					delete(a.loggers, reqID)
+					a.loggers[reqID].done <- struct{}{}
 					return
 				}
 			}

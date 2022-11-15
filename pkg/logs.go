@@ -48,7 +48,7 @@ func (a *AsyncLogger) Warn(reqID string, msg string) {
 		a.loggers[reqID].buffer <- messageWrapper{
 			level:  WARNING,
 			msg:    msg,
-			source: getCaller,
+			source: getCaller(),
 		}
 	} else {
 		a.parentLogger.Error(
@@ -63,7 +63,7 @@ func (a *AsyncLogger) Error(reqID string, msg string) {
 		a.loggers[reqID].buffer <- messageWrapper{
 			level:  ERROR,
 			msg:    msg,
-			source: getCaller,
+			source: getCaller(),
 		}
 	} else {
 		a.parentLogger.Error(

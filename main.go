@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	async_logger "github.com/james-milligan/aync-request-logging/pkg"
 	"go.uber.org/zap"
@@ -29,12 +29,13 @@ func main() {
 	logger, _ := cfg.Build()
 	x := async_logger.NewAsyncLogger(logger)
 
-	cancel, reqID := x.StartLogger(context.Background())
+	sync, reqID := x.StartLogger(context.Background())
 	x.Info(reqID, "first message")
 	x.Debug(reqID, "first message")
 	x.Warn(reqID, "first message")
 	x.Error(reqID, "first message")
 
-	cancel()
-	time.Sleep(10 * time.Second)
+	sync()
+	// time.Sleep(10 * time.Second)
+	fmt.Println("done")
 }
