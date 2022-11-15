@@ -2,7 +2,6 @@ package async_logger
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rs/xid"
 	"go.uber.org/zap"
@@ -63,7 +62,6 @@ func (a *AsyncLogger) log(ctx context.Context, fields []zap.Field, reqID string)
 			logMessage(a.loggers[reqID].logger, message)
 		case <-ctx.Done():
 			// need to flush any remaining messages in the buffer
-			fmt.Println("cancel triggered")
 			for {
 				select {
 				case <-a.loggers[reqID].buffer:
